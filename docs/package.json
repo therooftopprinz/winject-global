@@ -1,0 +1,11 @@
+{
+  "name": "winject-docs",
+  "private": true,
+  "description": "Pandoc HTML build for protocol docs (mermaid-filter uses @mermaid-js/mermaid-cli and Puppeteer/Chromium)",
+  "scripts": {
+    "render:vpn-protocol": "pandoc src/vpn_protocol/vpn_protocol_transport.md -o out/vpn_protocol_transport.html --standalone --embed-resources -F mermaid-filter"
+  },
+  "devDependencies": {
+    "mermaid-filter": "^1.4.7"
+  }
+}

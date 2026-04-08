@@ -125,66 +125,90 @@ sequence l3_tunnel
   list<u64> gateway_route;
   buffer<u8> l3_sdu;
 }
+```
 
 ## callflows:
 
 ### participants
-A,B,C,D - gate
-E,F,G,H - foreign
+A,B,C,D - gate<br/>
+E,F,G,H - foreign<br/>
 Z - server
 
 ### gate node initial flow (A:Z), IP Address Acquisition
-```
-A                          Z
-|<--A:Z session creation-->|
-| address_request          |
-+------------------------->|
-| address response         |
-|<-------------------------+
+```mermaid
+sequenceDiagram
+    participant A as A (gate)
+    participant Z as Z (server)
+    Note over A,Z: A:Z session creation
+    A->>Z: address_request
+    Z-->>A: address_response
 ```
 
 ### foreign node initial flow (E:A), IP Address Acquisition
-```
-E                          A                   Z
-|                          |<--A:Z-session---->|
-|<--E:A session creation-->|                   |
-| address_request          | address_request   |
-+------------------------->+------------------>|
-| address_response         | address_response  |
-|<-------------------------+<------------------+
+```mermaid
+sequenceDiagram
+    participant E as E (foreign)
+    participant A as A (gate)
+    participant Z as Z (server)
+    Note over A,Z: A:Z session
+    Note over E,A: E:A session creation
+    E->>A: address_request
+    A->>Z: address_request
+    Z-->>A: address_response
+    A-->>E: address_response
 ```
 
 ### tunnel flow (A:B, via default), direct path not available
-```
-A                 Z                 B              
-|<--A:Z session-->|<--Z:B session-->|
-| tunnel          | tunnel          |
-+---------------->|---------------->|
-|tunnel           | tunnel          |
-|<----------------+<----------------+
+```mermaid
+sequenceDiagram
+    participant A as A (gate)
+    participant Z as Z (server)
+    participant B as B (gate)
+    Note over A,Z: A:Z session
+    Note over Z,B: Z:B session
+    A->>Z: tunnel
+    Z->>B: tunnel
+    B-->>Z: tunnel
+    Z-->>A: tunnel
 ```
 
 ### tunnel flow (A:B direct), direct path becomes available
-```
-A                          B
-|<--hole-punching via Z--->|
-|<--A:B session creation-->|
-| tunnel                   |
-+------------------------->|
-| tunnel                   |
-|<-------------------------|
+```mermaid
+sequenceDiagram
+    participant A as A (gate)
+    participant B as B (gate)
+    Note over A,B: hole-punching via Z
+    Note over A,B: A:B session creation
+    A->>B: tunnel
+    B-->>A: tunnel
 ```
 
 ### full tunnel flow (E:F, via A,B)
-E                 A                 Z                 B                 F
-|<--E:A session-->|<--A:Z-session-->|<--Z:B session-->|<--B:F session-->|
-     ... new best path identified ...
-    
-|                 | mesh_update_ind | mesh_update_ind |                 |
-|                 |<----------------+---------------->|                 |
-|                 | mesh_update_ack | mesh_update_ack |                 |
-|                 +---------------->|<----------------+                 |
-|                 |<------------UDP Hole Punching---->|                 |
-|                 |<--A:B session creation----------->|                 |
-     ... new best path available ...
-|tunnel           | tunnel                            |                 |
+```mermaid
+sequenceDiagram
+    participant E as E (foreign)
+    participant A as A (gate)
+    participant Z as Z (server)
+    participant B as B (gate)
+    participant F as F (foreign)
+    Note over E,A: E:A session
+    Note over A,Z: A:Z session
+    Note over Z,B: Z:B session
+    Note over B,F: B:F session
+    Note over A,B: new best path identified
+    par A to B
+        A->>B: mesh_update_ind
+    and B to A
+        B->>A: mesh_update_ind
+    end
+    par A to B
+        A->>B: mesh_update_ack
+    and B to A
+        B->>A: mesh_update_ack
+    end
+    Note over A,B: UDP hole punching
+    Note over A,B: A:B session creation
+    Note over E,A: new best path available
+    E->>A: tunnel
+    A->>B: tunnel
+```
